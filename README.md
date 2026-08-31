@@ -2,7 +2,7 @@
 
 Este proyecto corresponde a la **Evaluación N°1 de Desarrollo Backend con Django & DRF**. Es una plataforma que simula la gestión académica de estudiantes, cursos y profesores utilizando **Django**, **Django REST Framework (DRF)** y el consumo asíncrono desde el frontend mediante **Vanilla JavaScript (Fetch)** y **Bootstrap**.
 
-## 📌 Requerimientos Cumplidos (Rúbrica)
+## 📌 Requerimientos
 
 1. **Modelo Entidad-Relación**: Tablas creadas correctamente (`Teacher`, `Course`, `Student`, `StudentCourse`).
 2. **Simulación de Datos**: Incluye archivo `datos_prueba.json` o se puede usar el panel de administrador.
