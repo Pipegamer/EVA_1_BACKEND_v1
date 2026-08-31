@@ -1,0 +1,167 @@
+{% extends 'academic/base.html' %}
+
+{% block title %}Profesores - Academic App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <!-- Formulario para Agregar/Editar -->
+        <div class="card shadow border-0 rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 text-success fw-bold">➕ Agregar / Editar Profesor</h5>
+            </div>
+            <div class="card-body">
+                <form id="teacherForm">
+                    <input type="hidden" id="teacherId">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="firstName" placeholder="Nombres" required>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="lastName" placeholder="Apellidos" required>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-success">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow border-0 rounded-3">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 text-success fw-bold">👥 Listado de Profesores</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="teachersTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4 py-3">ID</th>
+                                <th class="py-3">Nombres</th>
+                                <th class="py-3">Apellidos</th>
+                                <th class="py-3 text-end px-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                                    Cargando profesores desde la API...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función principal para cargar la lista de profesores
+    const loadTeachers = async () => {
+        const tbody = document.querySelector('#teachersTable tbody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>Cargando profesores...</td></tr>';
+        
+        try {
+            const response = await fetch('/api/teachers/');
+            if (!response.ok) throw new Error('Error al conectar con la API');
+            
+            const teachers = await response.json();
+            
+            if (teachers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay profesores registrados.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            teachers.forEach(teacher => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4"><span class="badge bg-secondary rounded-pill px-3 py-2">${teacher.id}</span></td>
+                    <td class="fw-medium">${teacher.first_name}</td>
+                    <td class="fw-medium">${teacher.last_name}</td>
+                    <td class="text-end px-4">
+                        <button class="btn btn-warning btn-sm me-1" onclick='editTeacher(${teacher.id}, "${teacher.first_name.replace(/"/g, '&quot;')}", "${teacher.last_name.replace(/"/g, '&quot;')}")'>Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteTeacher(${teacher.id})">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar los datos.</td></tr>';
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', loadTeachers);
+
+    // Evento para el envío del formulario
+    document.getElementById('teacherForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('teacherId').value;
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+
+        const url = id ? `/api/teachers/${id}/` : '/api/teachers/';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    first_name: firstName,
+                    last_name: lastName
+                })
+            });
+
+            if (response.ok) {
+                document.getElementById('teacherForm').reset();
+                document.getElementById('teacherId').value = '';
+                loadTeachers();
+            } else {
+                alert('Error al guardar el profesor.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión al servidor.');
+        }
+    });
+
+    // Función Editar
+    window.editTeacher = (id, firstName, lastName) => {
+        document.getElementById('teacherId').value = id;
+        document.getElementById('firstName').value = firstName;
+        document.getElementById('lastName').value = lastName;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Función Eliminar
+    window.deleteTeacher = async (id) => {
+        if (confirm('¿Estás seguro de que deseas eliminar este profesor?')) {
+            try {
+                const response = await fetch(`/api/teachers/${id}/`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    loadTeachers();
+                } else {
+                    alert('Error al eliminar el profesor. (Asegúrate de que no tenga cursos asignados)');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión al servidor.');
+            }
+        }
+    };
+</script>
+{% endblock %}

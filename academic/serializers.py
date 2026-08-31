@@ -12,6 +12,9 @@ class TeacherSerializer(serializers.ModelSerializer):
         fields = '__all__' # Serializa todos los campos de la tabla
 
 class CourseSerializer(serializers.ModelSerializer):
+    # Campo extra de solo lectura para devolver el nombre completo del profesor (first_name + last_name)
+    teacher_name = serializers.CharField(source='teacher.__str__', read_only=True)
+
     class Meta:
         model = Course
         fields = '__all__'

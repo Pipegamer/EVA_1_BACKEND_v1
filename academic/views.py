@@ -38,6 +38,10 @@ class StudentsPageView(TemplateView):
     # Conecta la ruta con el archivo HTML de estudiantes
     template_name = 'academic/students.html'
 
+class TeachersPageView(TemplateView):
+    # Conecta la ruta con el archivo HTML de profesores
+    template_name = 'academic/teachers.html'
+
 from django.shortcuts import render
 
 # Vista básica (basada en función) que redirige la ruta raíz '/' 

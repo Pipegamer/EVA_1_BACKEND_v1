@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     TeacherViewSet, CourseViewSet, StudentViewSet, StudentCourseViewSet,
-    CoursesPageView, StudentsPageView
+    CoursesPageView, StudentsPageView, TeachersPageView
 )
 
 # --- ENRUTADOR DE LA API (DRF Router) ---
@@ -24,4 +24,5 @@ urlpatterns = [
     # Conecta la ruta en el navegador (ej: localhost:8000/cursos/) con la Vista que retorna el HTML.
     path('cursos/', CoursesPageView.as_view(), name='courses_view'),
     path('estudiantes/', StudentsPageView.as_view(), name='students_view'),
+    path('profesores/', TeachersPageView.as_view(), name='teachers_view'),
 ]

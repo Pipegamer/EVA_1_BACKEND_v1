@@ -95,9 +95,9 @@
                     <td class="px-4"><span class="badge bg-secondary rounded-pill px-3 py-2">${course.id}</span></td>
                     <td class="fw-semibold text-dark">${course.name}</td>
                     <td>
-                        <!-- El curso devuelve el ID de su profesor (relación ForeignKey) -->
+                        <!-- El curso devuelve el ID de su profesor y su nombre completo -->
                         <span class="badge bg-info text-dark rounded-pill px-3 py-2">
-                            <i class="bi bi-person"></i> Profesor ID: ${course.teacher}
+                            <i class="bi bi-person"></i> ${course.teacher_name} (ID: ${course.teacher})
                         </span>
                     </td>
                     <td class="text-end px-4">
