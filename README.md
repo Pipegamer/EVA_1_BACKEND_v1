@@ -41,7 +41,7 @@ Una vez levantado, ingresa en tu navegador a: [http://localhost:8000/](http://lo
 Para gestionar los registros desde el backend de forma nativa, visita [http://localhost:8000/admin/](http://localhost:8000/admin/) e ingresa con las siguientes credenciales:
 
 - **Usuario:** `profe`
-- **Contraseña:** *(la contraseña que definiste localmente al ejecutar createsuperuser)*
+- **Contraseña:** *profe123*
 
 ---
 *Desarrollado para la asignatura de Desarrollo Backend.*
