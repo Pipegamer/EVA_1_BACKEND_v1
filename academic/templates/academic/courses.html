@@ -1,0 +1,192 @@
+{% extends 'academic/base.html' %}
+
+{% block title %}Cursos - Academic App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <!-- Formulario para Agregar/Editar Cursos
+             Funciona igual que en estudiantes: el id oculto (courseId) determina 
+             si la petición será un POST (creación) o un PUT (edición).
+             El campo teacherId es un input numérico para la llave foránea del profesor.
+        -->
+        <div class="card shadow border-0 rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 text-primary fw-bold">➕ Agregar / Editar Curso</h5>
+            </div>
+            <div class="card-body">
+                <form id="courseForm">
+                    <input type="hidden" id="courseId">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="courseName" placeholder="Nombre del Curso" required>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="number" class="form-control" id="teacherId" placeholder="ID del Profesor" required>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow border-0 rounded-3">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 text-primary fw-bold">🎓 Catálogo de Cursos</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="coursesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4 py-3">ID</th>
+                                <th class="py-3">Nombre del Curso</th>
+                                <th class="py-3">Profesor (ID)</th>
+                                <th class="py-3 text-end px-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    Cargando cursos desde la API...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función principal para cargar la lista de cursos desde la API
+    const loadCourses = async () => {
+        const tbody = document.querySelector('#coursesTable tbody');
+        // Spinner indicador de carga inicial mientras se obtienen los datos
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando cursos...</td></tr>';
+        
+        try {
+            // Petición GET al endpoint proporcionado por el router de DRF (Django REST Framework)
+            const response = await fetch('/api/courses/');
+            if (!response.ok) throw new Error('Error al conectar con la API');
+            
+            const courses = await response.json();
+            
+            // Validamos si el arreglo está vacío
+            if (courses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay cursos disponibles actualmente.</td></tr>';
+                return;
+            }
+
+            // Limpiamos contenido actual de la tabla
+            tbody.innerHTML = '';
+            
+            // Dibujamos las filas iterando sobre cada objeto devuelto por la API
+            courses.forEach(course => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4"><span class="badge bg-secondary rounded-pill px-3 py-2">${course.id}</span></td>
+                    <td class="fw-semibold text-dark">${course.name}</td>
+                    <td>
+                        <!-- El curso devuelve el ID de su profesor (relación ForeignKey) -->
+                        <span class="badge bg-info text-dark rounded-pill px-3 py-2">
+                            <i class="bi bi-person"></i> Profesor ID: ${course.teacher}
+                        </span>
+                    </td>
+                    <td class="text-end px-4">
+                        <!-- Evento para editar: Pasa el ID, Nombre y Profesor actual al formulario -->
+                        <button class="btn btn-warning btn-sm me-1" onclick='editCourse(${course.id}, "${course.name.replace(/"/g, '&quot;')}", ${course.teacher})'>Editar</button>
+                        <!-- Evento para eliminar: Pasa el ID respectivo -->
+                        <button class="btn btn-danger btn-sm" onclick="deleteCourse(${course.id})">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar los datos.</td></tr>';
+        }
+    };
+
+    // Al montar el DOM en el navegador, se realiza la primera carga
+    document.addEventListener('DOMContentLoaded', loadCourses);
+
+    // Evento principal para agregar o modificar datos
+    document.getElementById('courseForm').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Detiene el flujo normal de submit (que recargaría la página por completo)
+        
+        // Recolección de valores de los inputs del formulario
+        const id = document.getElementById('courseId').value;
+        const name = document.getElementById('courseName').value;
+        const teacher = document.getElementById('teacherId').value;
+
+        // Determinación de la ruta de la API y el método HTTP dependiendo de si tenemos un 'id' para actualizar
+        const url = id ? `/api/courses/${id}/` : '/api/courses/';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            // Envío del objeto en formato JSON al backend
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    teacher: teacher // Se envía el ID del profesor para relacionar la llave foránea
+                })
+            });
+
+            if (response.ok) {
+                // Éxito: limpiamos el formulario, reseteamos el ID oculto y actualizamos la tabla llamando a la API de nuevo
+                document.getElementById('courseForm').reset();
+                document.getElementById('courseId').value = '';
+                loadCourses();
+            } else {
+                alert('Error al guardar el curso.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión al servidor.');
+        }
+    });
+
+    // Función que se ejecuta al presionar 'Editar' en cada fila
+    window.editCourse = (id, name, teacher) => {
+        // Inyectamos los valores extraídos de la tabla dentro del formulario
+        document.getElementById('courseId').value = id;
+        document.getElementById('courseName').value = name;
+        document.getElementById('teacherId').value = teacher;
+        // Hacemos un desplazamiento animado hacia la parte superior de la página (hacia el formulario)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Función de borrado físico en base de datos al presionar 'Eliminar'
+    window.deleteCourse = async (id) => {
+        if (confirm('¿Estás seguro de que deseas eliminar este curso?')) {
+            try {
+                // Llamado con el método DELETE al endpoint /api/courses/{id}/
+                const response = await fetch(`/api/courses/${id}/`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    // Refresco automático de tabla visual tras eliminar correctamente
+                    loadCourses();
+                } else {
+                    alert('Error al eliminar el curso.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión al servidor.');
+            }
+        }
+    };
+</script>
+{% endblock %}

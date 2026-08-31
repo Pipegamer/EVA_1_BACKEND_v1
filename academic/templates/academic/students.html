@@ -1,0 +1,191 @@
+{% extends 'academic/base.html' %}
+
+{% block title %}Estudiantes - Academic App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        
+        <!-- Formulario para Agregar/Editar 
+             Este formulario se conecta con el evento 'submit' de JavaScript. 
+             Permite tanto crear un nuevo estudiante (vía POST) como actualizar uno existente (vía PUT).
+             El input oculto (studentId) es clave para diferenciar si estamos editando o creando.
+        -->
+        <div class="card shadow border-0 rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="mb-0 text-success fw-bold">➕ Agregar / Editar Estudiante</h5>
+            </div>
+            <div class="card-body">
+                <form id="studentForm">
+                    <input type="hidden" id="studentId">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="firstName" placeholder="Nombres" required>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control" id="lastName" placeholder="Apellidos" required>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-success">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow border-0 rounded-3">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 text-success fw-bold">👥 Listado de Estudiantes</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="studentsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4 py-3">ID</th>
+                                <th class="py-3">Nombres</th>
+                                <th class="py-3">Apellidos</th>
+                                <th class="py-3 text-end px-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                                    Cargando estudiantes desde la API...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función principal para cargar la lista de estudiantes mediante una petición GET a la API
+    const loadStudents = async () => {
+        const tbody = document.querySelector('#studentsTable tbody');
+        // Mostramos un spinner de carga mientras esperamos la respuesta del servidor
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-success me-2" role="status"></div>Cargando estudiantes...</td></tr>';
+        
+        try {
+            // Hacemos la petición GET al endpoint proporcionado por Django REST Framework
+            const response = await fetch('/api/students/');
+            if (!response.ok) throw new Error('Error al conectar con la API');
+            
+            // Convertimos la respuesta a JSON (arreglo de estudiantes)
+            const students = await response.json();
+            
+            // Si no hay datos, mostramos un mensaje amigable
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay estudiantes registrados.</td></tr>';
+                return;
+            }
+
+            // Limpiamos el tbody antes de insertar los nuevos datos
+            tbody.innerHTML = '';
+            
+            // Iteramos sobre cada estudiante y creamos dinámicamente las filas (<tr>)
+            students.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4"><span class="badge bg-secondary rounded-pill px-3 py-2">${student.id}</span></td>
+                    <td class="fw-medium">${student.first_name}</td>
+                    <td class="fw-medium">${student.last_name}</td>
+                    <td class="text-end px-4">
+                        <!-- Botón Editar: Llama a la función editStudent pasando los datos actuales de la fila -->
+                        <button class="btn btn-warning btn-sm me-1" onclick='editStudent(${student.id}, "${student.first_name.replace(/"/g, '&quot;')}", "${student.last_name.replace(/"/g, '&quot;')}")'>Editar</button>
+                        <!-- Botón Eliminar: Llama a deleteStudent pasando solo el ID -->
+                        <button class="btn btn-danger btn-sm" onclick="deleteStudent(${student.id})">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            // Mensaje de error visible para el usuario si falla la conexión o el servidor
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle"></i> Error al cargar los datos.</td></tr>';
+        }
+    };
+
+    // Evento que se dispara cuando el documento HTML ha sido completamente cargado
+    // Llama a la función loadStudents para renderizar la tabla al iniciar
+    document.addEventListener('DOMContentLoaded', loadStudents);
+
+    // Evento para escuchar el envío (submit) del formulario
+    document.getElementById('studentForm').addEventListener('submit', async (e) => {
+        e.preventDefault(); // Evita que la página se recargue (comportamiento por defecto)
+        
+        // Capturamos los valores actuales de los inputs
+        const id = document.getElementById('studentId').value;
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+
+        // Si el campo oculto 'id' tiene un valor, significa que estamos editando un estudiante existente (PUT).
+        // Si está vacío, estamos creando un estudiante nuevo (POST).
+        const url = id ? `/api/students/${id}/` : '/api/students/';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            // Petición POST o PUT enviando el objeto en formato JSON
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    first_name: firstName,
+                    last_name: lastName
+                })
+            });
+
+            if (response.ok) {
+                // Si se guardó correctamente: limpiamos el formulario y recargamos la tabla
+                document.getElementById('studentForm').reset();
+                document.getElementById('studentId').value = '';
+                loadStudents();
+            } else {
+                alert('Error al guardar el estudiante.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión al servidor.');
+        }
+    });
+
+    // Función que se ejecuta al presionar el botón "Editar" en la tabla
+    // Recibe los datos, rellena el formulario de la parte superior y hace un suave scroll hacia arriba
+    window.editStudent = (id, firstName, lastName) => {
+        document.getElementById('studentId').value = id;
+        document.getElementById('firstName').value = firstName;
+        document.getElementById('lastName').value = lastName;
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Regresamos la vista al formulario
+    };
+
+    // Función que se ejecuta al presionar "Eliminar" en la tabla
+    window.deleteStudent = async (id) => {
+        // Pedimos confirmación antes de proceder a borrar
+        if (confirm('¿Estás seguro de que deseas eliminar este estudiante?')) {
+            try {
+                // Petición DELETE a la API apuntando al ID específico
+                const response = await fetch(`/api/students/${id}/`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    // Si se elimina exitosamente, refrescamos la tabla
+                    loadStudents();
+                } else {
+                    alert('Error al eliminar el estudiante.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de conexión al servidor.');
+            }
+        }
+    };
+</script>
+{% endblock %}
