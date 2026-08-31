@@ -2,16 +2,6 @@
 
 Este proyecto corresponde a la **Evaluación N°1 de Desarrollo Backend con Django & DRF**. Es una plataforma que simula la gestión académica de estudiantes, cursos y profesores utilizando **Django**, **Django REST Framework (DRF)** y el consumo asíncrono desde el frontend mediante **Vanilla JavaScript (Fetch)** y **Bootstrap**.
 
-## 📌 Requerimientos
-
-1. **Modelo Entidad-Relación**: Tablas creadas correctamente (`Teacher`, `Course`, `Student`, `StudentCourse`).
-2. **Simulación de Datos**: Incluye archivo `datos_prueba.json` o se puede usar el panel de administrador.
-3. **Serializadores y Endpoints DRF**: API expuesta en `/api/` usando `ModelViewSet` y `DefaultRouter`.
-4. **Vistas Tradicionales e Interfaz Web (HTML)**: Endpoints REST enmascarados con vistas HTML consumiendo JSON por debajo con peticiones Fetch (`GET`, `POST`, `PUT`, `DELETE`).
-5. **Solución a Ruta Vacía**: La ruta raíz `/` renderiza el listado sin errores 404.
-6. **Código Full Comentado**: Cada archivo clave (Modelos, Vistas, Rutas, Plantillas y JS) cuenta con explicaciones técnicas.
-7. **Documentación IA**: Los prompts utilizados están registrados en el archivo `prompts.md`.
-
 ## 🚀 Instrucciones para Levantar el Proyecto
 
 ### 1. Activar el Entorno Virtual
